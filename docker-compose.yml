@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  sentinel-app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
+    volumes:
+      - ./results:/app/results
+      - ./checkpoints:/app/checkpoints
+    restart: unless-stopped

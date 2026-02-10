@@ -1,6 +1,8 @@
 # app.py
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+# [NEW] Deepgram Integration
+from deepgram_agent import DeepgramAudioAgent
 import cv2
 import numpy as np
 import base64
@@ -33,6 +35,9 @@ def backend_alert_callback(data):
     # In a real app, emit to a websocket here
 
 mm_detector = MultimodalFallDetector(alert_callback=backend_alert_callback, pose_detector_instance=pose_detector)
+
+# [NEW] Initialize Deepgram Agent
+deepgram_agent = DeepgramAudioAgent()
 
 # Factory for creating NEW instances in worker threads
 def detector_factory():
@@ -198,6 +203,28 @@ def request_instant_replay():
 @app.route('/replays/<path:filename>')
 def serve_replays(filename):
     return send_from_directory('./results/replays', filename)
+
+@app.route('/analyze_audio_distress', methods=['POST'])
+def analyze_audio_distress():
+    """Endpoint for Deepgram Audio Analysis"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file part'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No selected file'}), 400
+            
+        audio_bytes = file.read()
+        
+        # Analyze using Deepgram Agent
+        result = deepgram_agent.analyze_audio_buffer(audio_bytes)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Deepgram analysis failed: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     # Ensure checkpoint directories exist
